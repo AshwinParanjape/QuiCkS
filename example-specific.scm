@@ -31,6 +31,8 @@
     (string-append " The total number of calls to the oracle function is " (number->string count) 
                    " while classically, there would have been 2 calls each time the algorithm was run")))
 
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  GROVER's ALGORITHM  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;w is the required state
@@ -47,30 +49,48 @@
   (define (Grover-iteration in-reg n)
     (if (> n  0) 
         (begin (set! count (+ count 1))
-               (Grover-iteration ((U-s init-reg) (oracle in-reg)) (- n 1)))
+        (Grover-iteration ((U-s init-reg) (oracle in-reg)) (- n 1)))
         in-reg))
   (Grover-iteration init-reg (ceiling (expt no-of-elements 0.5))))
 
-(define oracle (U-w '(0 1 0 0 0 1 0 0 1 0)))
-(define ans (Grovers-algo oracle 1000))
-(display-reg ans)
-(measure! ans)
 
-count
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  FAST FOURIER TRANSFORM  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;this function provides the fast fourier transform of any register, which actually represents a superposition of many wave-functions
+(define  (fourier in-reg)
+  (define (fourier-h in-reg y)
+    (if (= y 0) ((on '(0) hadamard) in-reg)
+        ((on (list y) hadamard) (phase-controls (fourier-h in-reg (- y 1)) (- y 1) y))))
+  (define (phase-controls reg x y)
+    (if (< x 0) reg
+        ((on (list x y) (control 1 (phase-shift (/ pi (expt 2 (- (- y x) 1)))))) (phase-controls reg (- x 1) y))))
+  (fourier-h in-reg (- (no-of-qubits in-reg) 1)))
 
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;   SHOR's ALGORITHM   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ;;;;;;;;;;
-;
-;;this function provides the fast fourier transform of any register, which actually represents a superposition of many wave-functions
-;(define  (fourier in-reg)
-;  (define (fourier-h in-reg y)
-;    (if (= y 0) ((on '(0) hadamard) in-reg)
-;        ((on (list y) hadamard) (phase-controls (fourier-h in-reg (- y 1)) (- y 1) y))))
-;  (define (phase-controls reg x y)
-;    (if (< x 0) reg
-;        ((on (list x y) (control 1 (phase-shift (/ pi (expt 2 (- (- y x) 1)))))) (phase-controls reg (- x 1) y))))
-;  (fourier-h in-reg (- (no-of-qubits in-reg) 1)))
-;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;    TESTING  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;DEUTSCH-JOZSA ALGORITHM
+;the following two instructions test whether the function f(x)=1 and f(x)=1-x are balanced or constant. Uncomment (remove the ;) any or both to observe the output
+;(deutsch-modifier (lambda (x) 1))
+;(deutsch-modifier (lambda (x) (- 1 x)))
+
+;GROVER'S ALGORITHM
+;the following instructions define an oracle that corresponds to a search for the state (0 1 0 0 0 1 0 0 1 0), classically, this would have taken 1024 steps because there are 10 qubits, the number of steps taken by the quantum mechanical Grover's algo is displayed at the end... To make it work, uncomment each of the following 4 lines
+;(define oracle (U-w '(0 1 0 0 0 1 0 0 1 0)))
+;(define ans (Grovers-algo oracle 1000))
+;(measure! ans)
+;count
+
+;FAST FOURIER TRANSFORM
+;apply fourier transform on any register and observe output, for example - uncomment the following
+;(fourier (register (coeff 0.6) (coeff 0.8)))
+;(fourier (pump (list 1 2 3 4)))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;    INCOMPLETE CODE HERE ONWARDS;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;   SHOR's ALGORITHM   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;(define (exptmod x y n)
 ;  (cond ((= y 0) (modulo 1 n))
 ;        ((= (modulo y 2) 0) (modulo (exptmod (* x x) (quotient y 2) n) n))
@@ -109,15 +129,3 @@ count
 ;  (define output-reg (tensor (normalise (1-register q)) (register (coeff 1) (coeff 0))))
 ;  (define list2 (generate-all-states q))
 ;  (define list1 (flatten-reg input-reg))
-
-
-
-
-
-
-
-
-
-
-
-
